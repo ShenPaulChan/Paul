@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:cache="http://www.springframework.org/schema/cache"
+	xmlns:jpa="http://www.springframework.org/schema/data/jpa" 
+	xmlns:jee="http://www.springframework.org/schema/jee"
+	xmlns:tx="http://www.springframework.org/schema/tx" 
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:uti="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+	 http://www.springframework.org/schema/context 
+     http://www.springframework.org/schema/context/spring-context-4.2.xsd
+     http://www.springframework.org/schema/mvc
+     http://www.springframework.org/schema/mvc/spring-mvc.xsd
+     http://www.springframework.org/schema/util
+     http://www.springframework.org/schema/util/spring-util-4.2.xsd
+     http://www.springframework.org/schema/data/jpa
+     http://www.springframework.org/schema/data/jpa/spring-jpa.xsd
+     http://www.springframework.org/schema/jee
+     http://www.springframework.org/schema/jee/spring-jee-4.2.xsd
+     http://www.springframework.org/schema/tx 
+     http://www.springframework.org/schema/tx/spring-tx-4.1.xsd  
+     http://www.springframework.org/schema/cache 
+     http://www.springframework.org/schema/cache/spring-cache-4.1.xsd">
+
+	<jee:jndi-lookup id="dataSourceMaster"
+		jndi-name="java:comp/env/jndimaster/persistence" />
+		
+	<tx:annotation-driven transaction-manager="transactionManager" />
+	<!-- <cache:annotation-driven/> -->
+	
+	<bean id="dataSource" class="com.paul.demo.common.datasource.DynamicDataSource">
+		<property name="targetDataSources">
+			<map key-type="java.lang.String">
+				<entry key="slave" value-ref="dataSourceMaster" />
+			</map>
+		</property>
+		<property name="defaultTargetDataSource" ref="dataSourceMaster" />
+	</bean> 
+	  
+	<bean class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean" id="entityManagerFactory">
+		<property name="packagesToScan" value="com.paul.demo.common.domain" />
+		<property name="dataSource" ref="dataSource" />
+		<property name="jpaVendorAdapter" ref="jpaVendorAdapter" />
+		<property name="persistenceProvider" ref="persistenceProvider"/>
+		<property name="persistenceUnitName" value="demoweb" />
+		<property name="jpaProperties"> 
+			<props> 
+				<prop key="hibernate.show_sql">true</prop>  
+				<prop key="spring.jpa.hibernate.ddl-auto">update</prop>
+				<prop key="hibernate.cache.use_second_level_cache">false</prop>
+				<prop key="hibernate.cache.use_query_cache">false</prop>
+				<prop key="hibernate.current_session_context_class">org.springframework.orm.hibernate4.SpringSessionContext</prop>
+				<prop key="hibernate.use_sql_comments">true</prop>
+				<prop key="hibernate.format_sql">true</prop>   
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQL5InnoDBDialect</prop>
+				<prop key="hibernate.connection.characterEncoding">UTF-8</prop>
+				<!-- for reference
+				<prop key="hibernate.myeclipse.connection.profile">image</prop>
+				<prop key="hibernate.current_session_context_class">thread</prop>
+				<prop key="hibernate.show_sql">false</prop>
+				<prop key="hibernate.format_sql">false</prop>
+				<prop key="hibernate.use_sql_comments">true</prop>
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQL5InnoDBDialect</prop>
+				<prop key="hibernate.connection.characterEncoding">UTF-8</prop>
+		        <prop key="hibernate.cache.use_second_level_cache">false</prop>
+		        <prop key="hibernate.cache.use_query_cache">false</prop>
+		        <prop key="hibernate.cache.region.factory_class">org.hibernate.cache.ehcache.EhCacheRegionFactory</prop>
+		        <prop key="hibernate.cache.provider_configuration_file_resource_path">ehcache.xml</prop>
+		        <prop key="hibernate.current_session_context_class">org.springframework.orm.hibernate4.SpringSessionContext</prop>
+				 -->
+			</props>
+		</property>
+	</bean>
+	
+	<bean id="sessionFactory" factory-bean="entityManagerFactory" factory-method="getSessionFactory" />
+
+	<bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+		<property name="entityManagerFactory" ref="entityManagerFactory" />
+	</bean>
+	
+	<tx:annotation-driven transaction-manager="transactionManager" proxy-target-class="false"/>     
+	
+	<bean id="persistenceProvider" class="org.hibernate.ejb.HibernatePersistence"/>
+	 
+	<bean id="jpaVendorAdapter"
+		class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
+		<property name="showSql" value="true" />
+		<property name="generateDdl" value="true" />
+		<property name="databasePlatform" value="org.hibernate.dialect.MySQLDialect" />
+	</bean>
+	
+	<jpa:repositories base-package="com.paul.demo" />
+</beans>

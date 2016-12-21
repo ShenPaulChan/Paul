@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ehcache>
+
+	<!--
+		Sets the path to the directory where cache .data files are created. If
+		the path is a Java System Property it is replaced by its value in the
+		running VM. The following properties are translated: user.home -
+		User's home directory user.dir - User's current working directory
+		java.io.tmpdir - Default temp file path
+	-->
+
+	<!--指定二级缓存存放在磁盘上的位置-->
+	<!--<diskStore path="user.dir" />/data/www/-->
+	<diskStore path="webcaches" />
+	
+	<!-- server1 的cacheManagerPeerProviderFactory配置 -->
+	<cacheManagerPeerProviderFactory
+		class="net.sf.ehcache.distribution.RMICacheManagerPeerProviderFactory"
+		properties="multicastGroupAddress=230.0.0.1,
+        multicastGroupPort=4446,
+        timeToLive=1,
+        peerDiscovery=automatic"/>
+    <!--<cacheManagerPeerProviderFactory  
+            class="net.sf.ehcache.distribution.RMICacheManagerPeerProviderFactory"  
+            properties="peerDiscovery=manual,  
+                        rmiUrls=//localhost:40001/net.xfok.xInfo.entity.User"  
+            propertySeparator=","/> 
+      -->
+      <cacheManagerPeerListenerFactory
+ 			class="net.sf.ehcache.distribution.RMICacheManagerPeerListenerFactory"
+ 			properties="hostName=localhost, port=40002, socketTimeoutMillis=2000"/>
+	
+	
+	<!--我们可以给每个实体类指定一个对应的缓存，如果没有匹配到该类，则使用这个默认的缓存配置-->
+	<!-- //maxElementsInMemory在内存中存放的最大对象数 -->
+	<!--//eternal是否永久保存缓存，设置成false-->
+	<!--//overflowToDisk如果对象数量超过内存中最大的数，是否将其保存到磁盘中，设置成true-->
+	<defaultCache maxElementsInMemory="10000"
+		eternal="false"
+		timeToIdleSeconds="1800"
+		timeToLiveSeconds="3600"
+		overflowToDisk="true"/>
+
+	<!--
+		1、timeToLiveSeconds的定义是：以创建时间为基准开始计算的超时时长；
+		2、timeToIdleSeconds的定义是：在创建时间和最近访问时间中取出离现在最近的时间作为基准计算的超时时长；
+		3、如果仅设置了timeToLiveSeconds，则该对象的超时时间=创建时间+timeToLiveSeconds，假设为A；
+		4、如果没设置timeToLiveSeconds，则该对象的超时时间=max(创建时间，最近访问时间)+timeToIdleSeconds，假设为B；
+		5、如果两者都设置了，则取出A、B最少的值，即min(A,B)，表示只要有一个超时成立即算超时。
+	-->
+
+	<!--可以给每个实体类指定一个配置文件，通过name属性指定，要使用类的全名-->
+	<!--<cache name="com.xiaoluo.bean.Student" maxElementsInMemory="10000"
+		eternal="false" timeToIdleSeconds="300" timeToLiveSeconds="600"
+		overflowToDisk="true" />
+
+	<cache name="sampleCache2" maxElementsInMemory="1000" eternal="true"
+		timeToIdleSeconds="0" timeToLiveSeconds="0" overflowToDisk="false" />
+-->
+
+<!--
+		===============================集群缓存开始================================
+	-->
+		<!-- 
+        配置自定义缓存
+        maxElementsInMemory：缓存中允许创建的最大对象数
+        eternal：缓存中对象是否为永久的，如果是，超时设置将被忽略，对象从不过期。
+        timeToIdleSeconds：缓存数据空闲的最大时间，也就是说如果有一个缓存有多久没有被访问就会被销毁，
+                    如果该值是 0 就意味着元素可以停顿无穷长的时间。
+        timeToLiveSeconds：缓存数据存活的时间，缓存对象最大的的存活时间，超过这个时间就会被销毁，
+                    这只能在元素不是永久驻留时有效，如果该值是0就意味着元素可以停顿无穷长的时间。
+        overflowToDisk：内存不足时，是否启用磁盘缓存。
+        memoryStoreEvictionPolicy：缓存满了之后的淘汰算法。
+        
+        每一个小时更新一次缓存（1小时过期） 
+    -->
+    <!-- 该配置应该写，否则会出现警告，若不写等于没有用查询缓存 -->
+
+     <cache name="org.hibernate.cache.StandardQueryCache" 
+       maxElementsInMemory="5000"
+       eternal="false" 
+       timeToIdleSeconds="3600" 
+       timeToLiveSeconds="7200" 
+       overflowToDisk="true">
+        <cacheEventListenerFactory
+            class="net.sf.ehcache.distribution.RMICacheReplicatorFactory"
+            properties="replicateAsynchronously=true, 
+            replicatePuts=true, 
+            replicateUpdates=true,
+            replicateUpdatesViaCopy=true, 
+            replicateRemovals=true "/>
+        <bootstrapCacheLoaderFactory class="net.sf.ehcache.distribution.RMIBootstrapCacheLoaderFactory"/>
+     </cache>
+
+    <!-- 设置时间戳缓存的数据过期策略 -->
+
+         <!-- 该配置应该写，否则会出现警告，若不写等于没有用查询缓存 -->
+
+    <cache name="org.hibernate.cache.UpdateTimestampsCache" 
+       maxElementsInMemory="5000"
+       eternal="false" 
+       overflowToDisk="true">
+       <cacheEventListenerFactory
+            class="net.sf.ehcache.distribution.RMICacheReplicatorFactory"
+            properties="replicateAsynchronously=true, 
+            replicatePuts=true, 
+            replicateUpdates=true,
+            replicateUpdatesViaCopy=true, 
+            replicateRemovals=true "/>
+        <bootstrapCacheLoaderFactory class="net.sf.ehcache.distribution.RMIBootstrapCacheLoaderFactory"/>
+    </cache>
+
+    <!-- 设置自定义命名查询缓存customerQueries的数据过期策略 -->
+    <cache name="net.xfok.xInfo.entity.User"
+        maxElementsInMemory="10000"
+        eternal="false"
+        overflowToDisk="true"
+        timeToIdleSeconds="1800"
+        timeToLiveSeconds="3600"
+        memoryStoreEvictionPolicy="LFU">
+        <!-- 
+            RMI缓存分布同步查找 class使用net.sf.ehcache.distribution.RMICacheReplicatorFactory
+            这个工厂支持以下属性：
+            replicatePuts=true | false – 当一个新元素增加到缓存中的时候是否要复制到其他的peers。默认是true。
+            replicateUpdates=true | false – 当一个已经在缓存中存在的元素被覆盖时是否要进行复制。默认是true。
+            replicateRemovals= true | false – 当元素移除的时候是否进行复制。默认是true。
+            replicateAsynchronously=true | false – 复制方式是异步的指定为true时，还是同步的，指定为false时。默认是true。
+            replicatePutsViaCopy=true | false – 当一个新增元素被拷贝到其他的cache中时是否进行复制指定为true时为复制，默认是true。
+            replicateUpdatesViaCopy=true | false – 当一个元素被拷贝到其他的cache中时是否进行复制指定为true时为复制，默认是true。
+                asynchronousReplicationIntervalMillis=1000
+            -->
+        <!-- 监听RMI同步缓存对象配置 注册相应的的缓存监听类，用于处理缓存事件，如put,remove,update,和expire -->
+        <cacheEventListenerFactory
+            class="net.sf.ehcache.distribution.RMICacheReplicatorFactory"
+            properties="replicateAsynchronously=true, 
+            replicatePuts=true, 
+            replicateUpdates=true,
+            replicateUpdatesViaCopy=true, 
+            replicateRemovals=true "/>
+        <!-- 用于在初始化缓存，以及自动设置 -->
+        <bootstrapCacheLoaderFactory class="net.sf.ehcache.distribution.RMIBootstrapCacheLoaderFactory"/>
+	</cache>
+	<!--
+		===============================集群缓存结束================================
+	-->
+
+
+</ehcache>
