@@ -18,11 +18,11 @@ public class NumberUtils {
 	/** 整数 */
 	public static final String F_N = "#";
 	/** #.#一位小数 */
-	public static final String F_N_P_N = "#.#";
+	public static final String F_N_P_N = "0.0";
 	/** 0.00% 两位小数*/
-	public static final String F_N_P_NN_PER = "#.##%";
+	public static final String F_N_P_NN_PER = "0.00%";
 	/** 123,456.12 */
-	public static final String F_N_C_P = ",###.##";
+	public static final String F_N_C_P = ",000.00";
 
 	public static String format(double number, String format) {
 		return new DecimalFormat(format).format(number);
